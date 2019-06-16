@@ -1,3 +1,5 @@
+extern crate reqwest;
+
 #[cfg(test)]
 mod tests {
     #[test]

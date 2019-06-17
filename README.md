@@ -58,4 +58,4 @@ println!("Synced!");  // if there is an error, we won't make it to this line
 
 ## License
 
-TODO
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). See the `LICENSE` file.

@@ -5,4 +5,7 @@ authors = ["Alex Ellis <hello@alexell.is>"]
 edition = "2018"
 
 [dependencies]
+default = "0.1.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.39"
 reqwest = "0.9.18"

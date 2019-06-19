@@ -278,10 +278,24 @@ impl<'a> AnkiConnectClient<'a> {
     // ========== Media =====================================================
     // ======================================================================
 
+    pub fn delete_media_file(&self, filename: &str) -> Result<(), Box<std::error::Error>> {
+        let params = json!({ "filename": &filename });
+
+        match self.call("deleteMediaFile", Some(params)) {
+            Ok(json!(null)) => Ok(()),
+            Ok(_) => {
+                let err = AnkiConnectError {
+                    error_msg: "Received non-null response to deleteMediaFile request".to_string()
+                };
+                Err(err.into())
+            },
+            Err(e) => Err(e)
+        }
+    }
+
     // TODO
-    //   -- storeMediaFile
-    //   -- retrieveMediaFile
-    //   -- deleteMediaFile
+    //   -- storeMediaFile, "from file" and "from b64"
+    //   -- retrieveMediaFile, "from file" and "from b64"
 
     // ======================================================================
     // ========== Graphical =================================================

@@ -9,15 +9,6 @@ use serde_json::json;
 use super::error::AnkiConnectError;
 use super::api_version::ApiVersion;
 
-// TODO:
-// -- API call: multi
-// -- API calls: Decks section (11)
-// -- API calls: Models section (5)
-// -- API calls: Notes section (10)
-// -- API calls: Cards section (8)
-// -- API calls: Media section (3)
-// -- API calls: Graphical section (11)
-
 #[derive(Debug, Serialize)]
 struct AnkiConnectRequest<'a> {
     action: &'a str,
@@ -139,4 +130,81 @@ impl<'a> AnkiConnectClient<'a> {
             Err(e) => Err(e)
         }
     }
+
+    pub fn deck_names(&self) -> Result<Vec<String>, Box<std::error::Error>> {
+        match self.call("deckNames", None) {
+            Ok(json_val) => {
+                if let Some(ref v) = json_val.as_array() {
+                    Ok(v
+                       .iter()
+                       .filter_map(|s| s.as_str())
+                       .map(|s| s.to_string())
+                       .collect()
+                    )
+                } else {
+                    let err = AnkiConnectError {
+                        error_msg: "Could not parse vector of strings from json".to_string()
+                    };
+                    Err(err.into())
+                }
+            },
+            Err(e) => Err(e)
+        }
+    }
+
+    // TODO Not implemented:
+    //   -- multi
+    //
+    //   -- deckNamesAndIds
+    //   -- getDecks
+    //   -- createDeck
+    //   -- changeDeck
+    //   -- deleteDecks
+    //   -- getDeckConfig
+    //   -- saveDeckConfig
+    //   -- setDeckConfigId
+    //   -- cloneDeckConfigId
+    //   -- removeDeckConfigId
+    //
+    //   -- modelNames
+    //   -- modelNamesAndIds
+    //   -- modelFieldNames
+    //   -- modelFieldsOnTemplates
+    //   -- createModel
+    //
+    //   -- addNote
+    //   -- addNotes
+    //   -- canAddNotes
+    //   -- updateNoteFields
+    //   -- addTags
+    //   -- removeTags
+    //   -- getTags
+    //   -- findNotes
+    //   -- notesInfo
+    //   -- deleteNotes
+    //
+    //   -- suspend
+    //   -- unsuspend
+    //   -- areSuspended
+    //   -- areDue
+    //   -- getIntervals
+    //   -- findCards
+    //   -- cardsToNotes
+    //   -- cardsInfo
+    //
+    //   -- storeMediaFile
+    //   -- retrieveMediaFile
+    //   -- deleteMediaFile
+    //
+    //   -- guiBrowse
+    //   -- guiAddCards
+    //   -- guiCurrentCard
+    //   -- guiStartCardTimer
+    //   -- guiShowQuestion
+    //   -- guiShowAnswer
+    //   -- guiAnswerCard
+    //   -- guiDeckOverview
+    //   -- guiDeckBrowser
+    //   -- guiDeckReview
+    //   -- guiExitAnki
 }

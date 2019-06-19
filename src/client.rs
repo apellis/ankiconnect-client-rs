@@ -179,8 +179,28 @@ impl<'a> AnkiConnectClient<'a> {
     // ========== Models ====================================================
     // ======================================================================
 
+    pub fn model_names(&self) -> Result<Vec<String>, Box<std::error::Error>> {
+        match self.call("modelNames", None) {
+            Ok(json_val) => {
+                if let Some(ref v) = json_val.as_array() {
+                    Ok(v
+                       .iter()
+                       .filter_map(|s| s.as_str())
+                       .map(|s| s.to_string())
+                       .collect()
+                    )
+                } else {
+                    let err = AnkiConnectError {
+                        error_msg: "Could not parse vector of strings from json".to_string()
+                    };
+                    Err(err.into())
+                }
+            },
+            Err(e) => Err(e)
+        }
+    }
+
     // TODO
-    //   -- modelNames
     //   -- modelNamesAndIds
     //   -- modelFieldNames
     //   -- modelFieldsOnTemplates

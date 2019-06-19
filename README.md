@@ -20,12 +20,7 @@ let client = AnkiConnectClient::new("localhost", 8765);
 ```
 // create a client as above
 
-let result = client.call("version", None)?;
-if let Some(n) = result.as_i64() {
-    println!("The AnkiConnect server is using API version {}");
-} else {
-    println!("Got unexpected response: {}", result);
-}
+println!("host API version: {}", client.version()?);
 ```
 
 ### Get deck names
@@ -33,27 +28,9 @@ if let Some(n) = result.as_i64() {
 ```
 // create a client as above
 
-let result = client.call("deckNames", None)?;
-if let serde_json::Value::Array(v) = result {
-    for elt in v {
-        if let Some(s) = elt.as_str() {
-            println!("Found deck: {}", s);
-        } else {
-            println!("Could not parse deck: {}", s);
-        }
-    }
-} else {
-    println!("Got unexpected response: {}", result);
+for deck_name in client.deck_names()? {
+    println!("found deck with name: {}", deck_name);
 }
-```
-
-### Sync with AnkiWeb service
-
-```
-// create a client as above
-
-let result = client.call("sync", None)?;
-println!("Synced!");  // if there is an error, we won't make it to this line
 ```
 
 ## License

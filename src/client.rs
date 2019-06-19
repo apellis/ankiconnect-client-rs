@@ -73,34 +73,24 @@ impl<'a> AnkiConnectClient<'a> {
     // ======================================================================
 
     pub fn version(&self) -> Result<i64, Box<std::error::Error>> {
-        match self.call("version", None) {
-            Ok(json_val) => {
-                if let Some(n) = json_val.as_i64() {
-                    Ok(n)
-                } else {
-                    let err = AnkiConnectError {
-                        error_msg: "Could not parse i64 from json".to_string()
-                    };
-                    Err(err.into())
-                }
-            },
-            Err(e) => Err(e)
+        if let Some(n) = self.call("version", None)?.as_i64() {
+            Ok(n)
+        } else {
+            Err(
+                AnkiConnectError { error_msg: "Could not parse i64 from json".to_string() }
+                .into()
+            )
         }
     }
 
     pub fn upgrade(&self) -> Result<bool, Box<std::error::Error>> {
-        match self.call("upgrade", None) {
-            Ok(json_val) => {
-                if let Some(b) = json_val.as_bool() {
-                    Ok(b)
-                } else {
-                    let err = AnkiConnectError {
-                        error_msg: "Could not parse bool from json".to_string()
-                    };
-                    Err(err.into())
-                }
-            },
-            Err(e) => Err(e)
+        if let Some(b) = self.call("upgrade", None)?.as_bool() {
+            Ok(b)
+        } else {
+            Err(
+                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }
+                .into()
+            )
         }
     }
 
@@ -108,10 +98,10 @@ impl<'a> AnkiConnectClient<'a> {
         match self.call("sync", None) {
             Ok(json!(null)) => Ok(()),
             Ok(_) => {
-                let err = AnkiConnectError {
-                    error_msg: "Received non-null response to sync request".to_string()
-                };
-                Err(err.into())
+                Err(
+                    AnkiConnectError { error_msg: "Received non-null response to sync request".to_string() }
+                    .into()
+                )
             },
             Err(e) => Err(e)
         }
@@ -120,18 +110,13 @@ impl<'a> AnkiConnectClient<'a> {
     pub fn load_profile(&self, username: &str) -> Result<bool, Box<std::error::Error>> {
         let params = json!({ "name": username });
 
-        match self.call("loadProfile", Some(params)) {
-            Ok(json_val) => {
-                if let Some(b) = json_val.as_bool() {
-                    Ok(b)
-                } else {
-                    let err = AnkiConnectError {
-                        error_msg: "Could not parse bool from json".to_string()
-                    };
-                    Err(err.into())
-                }
-            },
-            Err(e) => Err(e)
+        if let Some(b) = self.call("loadProfile", Some(params))?.as_bool() {
+            Ok(b)
+        } else {
+            Err(
+                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }
+                .into()
+            )
         }
     }
 
@@ -143,23 +128,18 @@ impl<'a> AnkiConnectClient<'a> {
     // ======================================================================
 
     pub fn deck_names(&self) -> Result<Vec<String>, Box<std::error::Error>> {
-        match self.call("deckNames", None) {
-            Ok(json_val) => {
-                if let Some(ref v) = json_val.as_array() {
-                    Ok(v
-                       .iter()
-                       .filter_map(|s| s.as_str())
-                       .map(|s| s.to_string())
-                       .collect()
-                    )
-                } else {
-                    let err = AnkiConnectError {
-                        error_msg: "Could not parse vector of strings from json".to_string()
-                    };
-                    Err(err.into())
-                }
-            },
-            Err(e) => Err(e)
+        if let Some(ref v) = self.call("deckNames", None)?.as_array() {
+            Ok(v
+               .iter()
+               .filter_map(|s| s.as_str())
+               .map(|s| s.to_string())
+               .collect()
+            )
+        } else {
+            Err(
+                AnkiConnectError { error_msg: "Could not parse vector of strings from json".to_string() }
+                .into()
+            )
         }
     }
 
@@ -180,23 +160,18 @@ impl<'a> AnkiConnectClient<'a> {
     // ======================================================================
 
     pub fn model_names(&self) -> Result<Vec<String>, Box<std::error::Error>> {
-        match self.call("modelNames", None) {
-            Ok(json_val) => {
-                if let Some(ref v) = json_val.as_array() {
-                    Ok(v
-                       .iter()
-                       .filter_map(|s| s.as_str())
-                       .map(|s| s.to_string())
-                       .collect()
-                    )
-                } else {
-                    let err = AnkiConnectError {
-                        error_msg: "Could not parse vector of strings from json".to_string()
-                    };
-                    Err(err.into())
-                }
-            },
-            Err(e) => Err(e)
+        if let Some(ref v) = self.call("modelNames", None)?.as_array() {
+            Ok(v
+               .iter()
+               .filter_map(|s| s.as_str())
+               .map(|s| s.to_string())
+               .collect()
+            )
+        } else {
+            Err(
+                AnkiConnectError { error_msg: "Could not parse vector of strings from json".to_string() }
+                .into()
+            )
         }
     }
 
@@ -231,18 +206,13 @@ impl<'a> AnkiConnectClient<'a> {
     pub fn suspend(&self, cards: &Vec<i64>) -> Result<bool, Box<std::error::Error>> {
         let params = json!({ "cards": &cards });
 
-        match self.call("suspend", Some(params)) {
-            Ok(json_val) => {
-                if let Some(b) = json_val.as_bool() {
-                    Ok(b)
-                } else {
-                    let err = AnkiConnectError {
-                        error_msg: "Could not parse bool from json".to_string()
-                    };
-                    Err(err.into())
-                }
-            },
-            Err(e) => Err(e)
+        if let Some(b) = self.call("suspend", Some(params))?.as_bool() {
+            Ok(b)
+        } else {
+            Err (
+                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }
+                .into()
+            )
         }
     }
 
@@ -251,18 +221,12 @@ impl<'a> AnkiConnectClient<'a> {
     pub fn unsuspend(&self, cards: &Vec<i64>) -> Result<bool, Box<std::error::Error>> {
         let params = json!({ "cards": &cards });
 
-        match self.call("unsuspend", Some(params)) {
-            Ok(json_val) => {
-                if let Some(b) = json_val.as_bool() {
-                    Ok(b)
-                } else {
-                    let err = AnkiConnectError {
-                        error_msg: "Could not parse bool from json".to_string()
-                    };
-                    Err(err.into())
-                }
-            },
-            Err(e) => Err(e)
+        if let Some(b) = self.call("unsuspend", Some(params))?.as_bool() {
+            Ok(b)
+        } else {
+            Err(
+                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }.into()
+            )
         }
     }
 

@@ -206,9 +206,47 @@ impl<'a> AnkiConnectClient<'a> {
     // ========== Cards =====================================================
     // ======================================================================
 
+    // Warning: Anki 2.1.x will give an error ("NoneType is not iterable") if you provide
+    // invalide card ids
+    pub fn suspend(&self, cards: &Vec<i64>) -> Result<bool, Box<std::error::Error>> {
+        let params = json!({ "cards": &cards });
+
+        match self.call("suspend", Some(params)) {
+            Ok(json_val) => {
+                if let Some(b) = json_val.as_bool() {
+                    Ok(b)
+                } else {
+                    let err = AnkiConnectError {
+                        error_msg: "Could not parse bool from json".to_string()
+                    };
+                    Err(err.into())
+                }
+            },
+            Err(e) => Err(e)
+        }
+    }
+
+    // Warning: Anki 2.1.x will give an error ("NoneType is not iterable") if you provide
+    // invalide card ids
+    pub fn unsuspend(&self, cards: &Vec<i64>) -> Result<bool, Box<std::error::Error>> {
+        let params = json!({ "cards": &cards });
+
+        match self.call("unsuspend", Some(params)) {
+            Ok(json_val) => {
+                if let Some(b) = json_val.as_bool() {
+                    Ok(b)
+                } else {
+                    let err = AnkiConnectError {
+                        error_msg: "Could not parse bool from json".to_string()
+                    };
+                    Err(err.into())
+                }
+            },
+            Err(e) => Err(e)
+        }
+    }
+
     // TODO
-    //   -- suspend
-    //   -- unsuspend
     //   -- areSuspended
     //   -- areDue
     //   -- getIntervals

@@ -2,8 +2,6 @@
 
 A Rust client for [AnkiConnect](https://foosoft.net/projects/anki-connect/). The currently supported API version is 6.
 
-Requests and responses use `serde_json::Value` structs, so the `serde_json` crate is a requirement.
-
 ## Examples
 
 ### Create a client

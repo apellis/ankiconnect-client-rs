@@ -3,8 +3,11 @@ extern crate serde;
 extern crate serde_json;
 
 use default::default;
+use std::fmt::Debug;
 use serde::{Serialize, Deserialize};
+use serde::de::DeserializeOwned;
 use serde_json::json;
+use std::collections::HashMap;
 
 use super::error::AnkiConnectError;
 use super::api_version::ApiVersion;
@@ -21,13 +24,6 @@ struct AnkiConnectRequest<'a> {
     params: serde_json::Value,
 }
 
-#[derive(Debug, Deserialize)]
-struct AnkiConnectResponse {
-    result: serde_json::Value,
-
-    error: Option<String>,
-}
-
 #[derive(Debug)]
 pub struct AnkiConnectClient<'a> {
     hostname: &'a str,
@@ -40,8 +36,9 @@ impl<'a> AnkiConnectClient<'a> {
         AnkiConnectClient { hostname, port, version: default() }
     }
 
-    fn call<'b>(&self, action: &'b str, params: Option<serde_json::Value>)
-        -> Result<serde_json::Value, Box<std::error::Error>>
+    fn call<'b, ResultT>(&self, action: &'b str, params: Option<serde_json::Value>)
+            -> Result<ResultT, Box<std::error::Error>>
+            where ResultT: Debug + DeserializeOwned
     {
         let request = AnkiConnectRequest {
             action: action,
@@ -52,19 +49,23 @@ impl<'a> AnkiConnectClient<'a> {
             }
         };
 
+        #[derive(Debug, Deserialize)]
+        struct Response<ResultT> {
+            result: ResultT,
+            error: Option<String>,
+        }
+
         let client = reqwest::Client::new();
-        let response: AnkiConnectResponse = client.post(
+        let response: Response<ResultT> = client.post(
                 &format!("http://{}:{}", self.hostname, self.port))
             .json(&request)
             .send()?
             .json()?;
 
-        match response.error {
-            Some(error_msg) => {
-                let err = AnkiConnectError { error_msg };
-                Err(err.into())
-            },
-            None => Ok(response.result)
+        if let Some(error_msg) = response.error {
+            Err(AnkiConnectError { error_msg }.into())
+        } else {
+            Ok(response.result)
         }
     }
 
@@ -73,51 +74,20 @@ impl<'a> AnkiConnectClient<'a> {
     // ======================================================================
 
     pub fn version(&self) -> Result<i64, Box<std::error::Error>> {
-        if let Some(n) = self.call("version", None)?.as_i64() {
-            Ok(n)
-        } else {
-            Err(
-                AnkiConnectError { error_msg: "Could not parse i64 from json".to_string() }
-                .into()
-            )
-        }
+        Ok(self.call::<i64>("version", None)?)
     }
 
     pub fn upgrade(&self) -> Result<bool, Box<std::error::Error>> {
-        if let Some(b) = self.call("upgrade", None)?.as_bool() {
-            Ok(b)
-        } else {
-            Err(
-                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }
-                .into()
-            )
-        }
+        Ok(self.call::<bool>("upgrade", None)?)
     }
 
     pub fn sync(&self) -> Result<(), Box<std::error::Error>> {
-        match self.call("sync", None) {
-            Ok(json!(null)) => Ok(()),
-            Ok(_) => {
-                Err(
-                    AnkiConnectError { error_msg: "Received non-null response to sync request".to_string() }
-                    .into()
-                )
-            },
-            Err(e) => Err(e)
-        }
+        Ok(self.call::<()>("sync", None)?)
     }
 
     pub fn load_profile(&self, username: &str) -> Result<bool, Box<std::error::Error>> {
         let params = json!({ "name": username });
-
-        if let Some(b) = self.call("loadProfile", Some(params))?.as_bool() {
-            Ok(b)
-        } else {
-            Err(
-                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }
-                .into()
-            )
-        }
+        Ok(self.call::<bool>("loadProfile", Some(params))?)
     }
 
     // TODO
@@ -128,23 +98,14 @@ impl<'a> AnkiConnectClient<'a> {
     // ======================================================================
 
     pub fn deck_names(&self) -> Result<Vec<String>, Box<std::error::Error>> {
-        if let Some(ref v) = self.call("deckNames", None)?.as_array() {
-            Ok(v
-               .iter()
-               .filter_map(|s| s.as_str())
-               .map(|s| s.to_string())
-               .collect()
-            )
-        } else {
-            Err(
-                AnkiConnectError { error_msg: "Could not parse vector of strings from json".to_string() }
-                .into()
-            )
-        }
+        Ok(self.call::<Vec<String>>("deckNames", None)?)
+    }
+
+    pub fn deck_names_and_ids(&self) -> Result<HashMap<String, i64>, Box<std::error::Error>> {
+        Ok(self.call::<HashMap<String, i64>>("deckNamesAndIds", None)?)
     }
 
     // TODO
-    //   -- deckNamesAndIds
     //   -- getDecks
     //   -- createDeck
     //   -- changeDeck
@@ -160,19 +121,7 @@ impl<'a> AnkiConnectClient<'a> {
     // ======================================================================
 
     pub fn model_names(&self) -> Result<Vec<String>, Box<std::error::Error>> {
-        if let Some(ref v) = self.call("modelNames", None)?.as_array() {
-            Ok(v
-               .iter()
-               .filter_map(|s| s.as_str())
-               .map(|s| s.to_string())
-               .collect()
-            )
-        } else {
-            Err(
-                AnkiConnectError { error_msg: "Could not parse vector of strings from json".to_string() }
-                .into()
-            )
-        }
+        Ok(self.call::<Vec<String>>("modelNames", None)?)
     }
 
     // TODO
@@ -203,31 +152,23 @@ impl<'a> AnkiConnectClient<'a> {
 
     // Warning: Anki 2.1.x will give an error ("NoneType is not iterable") if you provide
     // invalide card ids
-    pub fn suspend(&self, cards: &Vec<i64>) -> Result<bool, Box<std::error::Error>> {
+    // Warning 2: Return type is Option<bool> rather than bool for symmetry with unsuspend;
+    // see warning 2 on that method.
+    pub fn suspend(&self, cards: &Vec<i64>) -> Result<Option<bool>, Box<std::error::Error>> {
         let params = json!({ "cards": &cards });
-
-        if let Some(b) = self.call("suspend", Some(params))?.as_bool() {
-            Ok(b)
-        } else {
-            Err (
-                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }
-                .into()
-            )
-        }
+        Ok(self.call::<Option<bool>>("suspend", Some(params))?)
     }
 
     // Warning: Anki 2.1.x will give an error ("NoneType is not iterable") if you provide
     // invalide card ids
-    pub fn unsuspend(&self, cards: &Vec<i64>) -> Result<bool, Box<std::error::Error>> {
+    // Warning 2: Return type is Option<bool> rather than bool because in some cases, Anki 2.1.x
+    // will return null for both result and error -- according to current (2019-06-20) API docs,
+    // this appears to be out of compliance with the API spec. But if were to just let this error
+    // out when Anki 2.1.x gives the null-null response, this would happen too often for this
+    // method to be useful.
+    pub fn unsuspend(&self, cards: &Vec<i64>) -> Result<Option<bool>, Box<std::error::Error>> {
         let params = json!({ "cards": &cards });
-
-        if let Some(b) = self.call("unsuspend", Some(params))?.as_bool() {
-            Ok(b)
-        } else {
-            Err(
-                AnkiConnectError { error_msg: "Could not parse bool from json".to_string() }.into()
-            )
-        }
+        Ok(self.call::<Option<bool>>("unsuspend", Some(params))?)
     }
 
     // TODO
@@ -244,17 +185,7 @@ impl<'a> AnkiConnectClient<'a> {
 
     pub fn delete_media_file(&self, filename: &str) -> Result<(), Box<std::error::Error>> {
         let params = json!({ "filename": &filename });
-
-        match self.call("deleteMediaFile", Some(params)) {
-            Ok(json!(null)) => Ok(()),
-            Ok(_) => {
-                let err = AnkiConnectError {
-                    error_msg: "Received non-null response to deleteMediaFile request".to_string()
-                };
-                Err(err.into())
-            },
-            Err(e) => Err(e)
-        }
+        Ok(self.call::<()>("deleteMediaFile", Some(params))?)
     }
 
     // TODO

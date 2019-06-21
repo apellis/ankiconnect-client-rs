@@ -91,8 +91,7 @@ impl<'a> AnkiConnectClient<'a> {
         Ok(self.call::<bool>("loadProfile", Some(params))?)
     }
 
-    // TODO
-    // -- multi
+    // TODO multi
 
     // ======================================================================
     // ========== Decks =====================================================
@@ -123,7 +122,7 @@ impl<'a> AnkiConnectClient<'a> {
         Ok(self.call::<()>("changeDeck", Some(params))?)
     }
 
-    pub fn delete_decks(&self, decks: &Vec<String>, cards_too: bool) -> Result<(), Box<Error>> {
+    pub fn delete_decks(&self, decks: &Vec<&str>, cards_too: bool) -> Result<(), Box<Error>> {
         let params = json!({ "decks": &decks, "cardsToo": cards_too });
         Ok(self.call::<()>("deleteDecks", Some(params))?)
     }
@@ -138,7 +137,7 @@ impl<'a> AnkiConnectClient<'a> {
         Ok(self.call::<bool>("saveDeckConfig", Some(params))?)
     }
 
-    pub fn set_deck_config_id(&self, decks: &Vec<String>, config_id: i64)
+    pub fn set_deck_config_id(&self, decks: &Vec<&str>, config_id: i64)
             -> Result<bool, Box<Error>>
     {
         let params = json!({ "decks": decks, "configId": config_id });
@@ -179,9 +178,9 @@ impl<'a> AnkiConnectClient<'a> {
     pub fn create_model(
             &self,
             model_name: &str,
-            in_order_fields: &Vec<String>,
+            in_order_fields: &Vec<&str>,
             css: &str,
-            card_templates: HashMap<String, String>)
+            card_templates: HashMap<&str, &str>)
             -> Result<serde_json::Value, Box<Error>>
     {
         let params = json!({
